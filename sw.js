@@ -1,4 +1,5 @@
 var cacheName = 'pwa-cashe_02';
+var dynamiccashe = 'pwa-data-cashe_01';
 var filesToCache = [
   '/css/style.css',
   '/js/index.js',
@@ -35,11 +36,32 @@ self.addEventListener('activate', function (e) {
 
 self.addEventListener('fetch', function (e) {
   console.log('Fetch Services', e.request.url);
-  e.respondWith(
-    caches.match(e.request).then(function (response) {
-      return response || fetch(e.request);
-    })
-  );
-}); 
+  const req = e.request;
+  const url = new URL(req.url);
+
+  if (url.origin === location.origin) {
+    e.respondWith(
+      caches.match(req).then(function (response) {
+        return response || fetch(req);
+      })
+    );
+  } else {
+    e.respondWith(firstCheckNetwork(e.request));
+  }
+
+});
+
+async function firstCheckNetwork(req) {
+  const cache = await caches.open(dynamiccashe);
+  try {
+
+    const result = await fetch(req);
+    cache.put(req, result.clone());
+    return result;
+  } catch (error) {
+    return await caches.match(req);
+
+  }
+}
 
 
